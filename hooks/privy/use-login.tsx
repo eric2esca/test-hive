@@ -5,15 +5,56 @@ import { useFundWallet, useSolanaWallets } from "@privy-io/react-auth/solana";
 import { useChain } from "@/app/_contexts/chain-context";
 import { useEffect, useRef } from "react";
 
+// Safe hook wrappers that handle missing Privy provider
+const useSafePrivy = () => {
+    try {
+        return usePrivy();
+    } catch {
+        return { user: null, ready: false, logout: () => {}, linkWallet: () => {} };
+    }
+};
+
+const useSafeWallets = () => {
+    try {
+        return useWallets();
+    } catch {
+        return { wallets: [], ready: false };
+    }
+};
+
+const useSafeSolanaWallets = () => {
+    try {
+        return useSolanaWallets();
+    } catch {
+        return { wallets: [] };
+    }
+};
+
+const useSafeConnectWallet = () => {
+    try {
+        return useConnectWallet();
+    } catch {
+        return { connectWallet: () => Promise.resolve() };
+    }
+};
+
+const useSafeFundWallet = () => {
+    try {
+        return useFundWallet();
+    } catch {
+        return { fundWallet: () => {} };
+    }
+};
+
 export const useLogin = ({
     onComplete
 }: {
     onComplete?: (wallet: Wallet) => void
 } = {}) => {
-    const { user, ready, logout, linkWallet: privyLinkWallet } = usePrivy();
+    const { user, ready, logout, linkWallet: privyLinkWallet } = useSafePrivy();
     const { walletAddresses, setWalletAddress, currentChain, setCurrentChain } = useChain();
-    const { wallets, ready: walletsReady } = useWallets();
-    const { wallets: solanaWallets } = useSolanaWallets();
+    const { wallets, ready: walletsReady } = useSafeWallets();
+    const { wallets: solanaWallets } = useSafeSolanaWallets();
     
     // Use refs to prevent infinite loops
     const processedWallets = useRef<Set<string>>(new Set());
@@ -67,8 +108,11 @@ export const useLogin = ({
         }
     }, [solanaWallets, evmWallets, setWalletAddress, setCurrentChain]);
 
-    const { login } = usePrivyLogin({
-        onComplete: async (user, _, __) => {
+    // Safe wrapper for usePrivyLogin
+    let login = () => console.warn('Privy is not configured');
+    try {
+        const privyLogin = usePrivyLogin({
+            onComplete: async (user, _, __) => {
             if (user.wallet) {
                 console.log("Wallet connection completed:", {
                     address: user.wallet.address,
@@ -104,7 +148,11 @@ export const useLogin = ({
                 onComplete?.(user.wallet);
             }
         }
-    });
+        });
+        login = privyLogin.login;
+    } catch (e) {
+        console.warn('Privy login not available:', e);
+    }
 
     // Enhanced login that handles chain-specific wallet connections
     const enhancedLogin = () => {
@@ -151,9 +199,9 @@ export const useLogin = ({
         window.open(`https://bridge.base.org/deposit?destinationAddress=${address}`, '_blank');
     };
 
-    const { connectWallet } = useConnectWallet();
+    const { connectWallet } = useSafeConnectWallet();
 
-    const { fundWallet } = useFundWallet();
+    const { fundWallet } = useSafeFundWallet();
 
     return {
         user,

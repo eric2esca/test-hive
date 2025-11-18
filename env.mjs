@@ -3,12 +3,12 @@ import { z } from "zod";
 
 export const env = createEnv({
   server: {
-    HELIUS_API_KEY: z.string().min(1),
-    BIRDEYE_API_KEY: z.string().min(1),
-    BSCSCAN_API_KEY: z.string().min(1),
+    HELIUS_API_KEY: z.string().optional(),
+    BIRDEYE_API_KEY: z.string().optional(),
+    BSCSCAN_API_KEY: z.string().optional(),
   },
   client: {
-    NEXT_PUBLIC_PRIVY_APP_ID: z.string().min(1),
+    NEXT_PUBLIC_PRIVY_APP_ID: z.string().optional(),
   },
   runtimeEnv: {
     HELIUS_API_KEY: process.env.HELIUS_API_KEY,

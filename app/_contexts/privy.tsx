@@ -17,9 +17,15 @@ const solanaConnectors = toSolanaWalletConnectors({
 });
 
 export const PrivyProvider: React.FC<Props> = ({ children }) => {
+    // If Privy is not configured, render children without auth provider
+    if (!process.env.NEXT_PUBLIC_PRIVY_APP_ID) {
+        console.warn('⚠️  NEXT_PUBLIC_PRIVY_APP_ID is not configured. Authentication features will be disabled.');
+        return <>{children}</>;
+    }
+
     return (
         <PrivyProviderBase
-            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
+            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID}
             config={{
                 appearance: {
                     theme: 'dark',
@@ -39,7 +45,7 @@ export const PrivyProvider: React.FC<Props> = ({ children }) => {
                 solanaClusters: [
                     {
                         name: 'mainnet-beta',
-                        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL!,
+                        rpcUrl: process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
                     }
                 ],
                 supportedChains: [bsc],

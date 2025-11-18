@@ -6,11 +6,28 @@ import { useSolanaWallets } from "@privy-io/react-auth/solana";
 
 import { useChain } from "@/app/_contexts/chain-context";
 
+// Safe hook wrappers that handle missing Privy provider
+const useSafePrivy = () => {
+    try {
+        return usePrivy();
+    } catch {
+        return { user: null };
+    }
+};
+
+const useSafeSolanaWallets = () => {
+    try {
+        return useSolanaWallets();
+    } catch {
+        return { wallets: [] };
+    }
+};
+
 export const useSendTransaction = () => {
 
-    const { user } = usePrivy();
+    const { user } = useSafePrivy();
 
-    const { wallets } = useSolanaWallets();
+    const { wallets } = useSafeSolanaWallets();
 
     const { currentChain } = useChain();
 
@@ -21,7 +38,7 @@ export const useSendTransaction = () => {
     const sendTransaction = async (transaction: VersionedTransaction) => {
         if(!wallet) throw new Error("No Solana wallet found");
 
-        const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL!);
+        const connection = new Connection(process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
 
         return wallet.sendTransaction(transaction, connection, {
             skipPreflight: true,
